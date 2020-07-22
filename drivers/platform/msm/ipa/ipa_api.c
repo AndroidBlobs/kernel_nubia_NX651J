@@ -3738,7 +3738,7 @@ int ipa_get_prot_id(enum ipa_client_type client)
 EXPORT_SYMBOL(ipa_get_prot_id);
 
 static const struct dev_pm_ops ipa_pm_ops = {
-	.suspend_late = ipa_ap_suspend,
+    .suspend_late = ipa_ap_suspend,
 	.resume_early = ipa_ap_resume,
 };
 
