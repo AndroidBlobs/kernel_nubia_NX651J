@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  */
 
 #include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
@@ -113,10 +113,15 @@ static int gmu_kernel_fault_handler(struct iommu_domain *domain,
 	return _gmu_iommu_fault_handler(dev, addr, flags, "gmu_kernel");
 }
 
+int gmu_smmu_fault;
+
 static int gmu_user_fault_handler(struct iommu_domain *domain,
 		struct device *dev, unsigned long addr, int flags, void *token)
 {
-	return _gmu_iommu_fault_handler(dev, addr, flags, "gmu_user");
+	_gmu_iommu_fault_handler(dev, addr, flags, "gmu_user");
+
+	gmu_smmu_fault = true;
+	return -EBUSY;
 }
 
 static void free_gmu_mem(struct gmu_device *gmu,
@@ -549,8 +554,7 @@ static int gmu_dcvs_set(struct kgsl_device *device,
 		 */
 		if (test_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv)) {
 			gmu_core_snapshot(device);
-			adreno_set_gpu_fault(adreno_dev, ADRENO_GMU_FAULT);
-			adreno_set_gpu_fault(adreno_dev,
+			adreno_set_gpu_fault(adreno_dev, ADRENO_GMU_FAULT |
 				ADRENO_GMU_FAULT_SKIP_SNAPSHOT);
 			adreno_dispatcher_schedule(device);
 		}
@@ -1552,6 +1556,9 @@ static void gmu_snapshot(struct kgsl_device *device)
 			~(gmu_dev_ops->gmu2host_intr_mask));
 
 	gmu->fault_count++;
+
+	if (gmu_smmu_fault)
+	BUG();
 }
 
 static int gmu_init(struct kgsl_device *device)
