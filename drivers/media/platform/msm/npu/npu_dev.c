@@ -1896,8 +1896,6 @@ static int npu_pwrctrl_init(struct npu_device *npu_dev)
 	struct platform_device *p2dev;
 	struct npu_pwrctrl *pwr = &npu_dev->pwrctrl;
 
-	pwr->devbw_num = 0;
-
 	/* Power levels */
 	node = of_find_node_by_name(pdev->dev.of_node, "qcom,npu-pwrlevels");
 
@@ -1911,17 +1909,15 @@ static int npu_pwrctrl_init(struct npu_device *npu_dev)
 		return ret;
 
 	/* Parse Bandwidth Monitor */
-	ret = of_property_count_strings(pdev->dev.of_node,
+	pwr->devbw_num = of_property_count_strings(pdev->dev.of_node,
 			"qcom,npubw-dev-names");
-	if (ret <= 0) {
+	if (pwr->devbw_num <= 0) {
 		NPU_INFO("npubw-dev-names are not defined\n");
 		return 0;
-	} else if (ret > NPU_MAX_BW_DEVS) {
-		NPU_ERR("number of devbw %d exceeds limit\n", ret);
+	} else if (pwr->devbw_num > NPU_MAX_BW_DEVS) {
+		NPU_ERR("number of devbw %d exceeds limit\n", pwr->devbw_num);
 		return -EINVAL;
 	}
-	pwr->devbw_num = ret;
-	ret = 0;
 
 	for (i = 0; i < pwr->devbw_num; i++) {
 		node = of_parse_phandle(pdev->dev.of_node,
