@@ -4310,6 +4310,7 @@ static int process_suspend(struct qpnp_qg *chip)
 		return 0;
 
 	cancel_delayed_work_sync(&chip->ttf->ttf_work);
+	cancel_delayed_work_sync(&chip->qg_sleep_exit_work);
 
 	chip->suspend_data = false;
 
@@ -4475,9 +4476,6 @@ static int qpnp_qg_suspend_noirq(struct device *dev)
 {
 	int rc;
 	struct qpnp_qg *chip = dev_get_drvdata(dev);
-
-	/* cancel any pending sleep_exit work */
-	cancel_delayed_work_sync(&chip->qg_sleep_exit_work);
 
 	mutex_lock(&chip->data_lock);
 
@@ -4671,6 +4669,14 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 			return rc;
 		}
 		schedule_delayed_work(&chip->ttf->ttf_work, 10000);
+#if defined(CONFIG_NUBIA_CHARGE_FEATURE)
+		chip->soc_monitor_work_votable = find_votable("SOC_MONITOR");
+		if (chip->soc_monitor_work_votable == NULL) {
+			pr_err("NEO: can't find SOC_MONITOR votable\n");
+		} else {
+			vote(chip->soc_monitor_work_votable, "FG_PROFILE_VOTER", true, 0);
+		}
+#endif
 	}
 
 	rc = qg_determine_pon_soc(chip);
